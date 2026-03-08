@@ -1,0 +1,50 @@
+# ─────────────────────────────────────────────
+# RGIPCOL  Base Configuration
+# ─────────────────────────────────────────────
+
+# ---------- 路径 ----------
+clip_model_path: "/home/bingxing2/home/scx6d4e/run/xuanzhenzhen/Troika/code/checkpoints/ViT-L-14.pt"
+data_root: "/home/bingxing2/home/scx6d4e/run/xuanzhenzhen/Troika/code/data"
+graph_cache_dir: "./graph_data"
+experiment_dir: "./experiments"
+
+# ---------- CLIP ----------
+clip_model: "ViT-L/14"           # 模型名称（用于tokenizer等）
+image_size: 224
+feature_dim: 768                  # CLIP ViT-L/14 输出维度
+
+# ---------- 软提示（Soft Prompt） ----------
+prefix_length: 3                  # 前缀向量数量 k（与 "a photo of" 等长）
+
+# ---------- RGCN ----------
+rgcn_hidden_dim: 768              # 隐层维度（与CLIP特征对齐）
+rgcn_output_dim: 768              # 输出维度
+rgcn_num_layers: 2                # GCN层数
+rgcn_num_relations: 7             # 有向边类型数（见 graph_constructor.py）
+rgcn_dropout: 0.3
+# 基函数分解（num_bases=-1 表示不使用分解，直接学每种关系的W_r）
+# 若数据集边类型多、节点少，建议设为 2~4 防止过拟合
+rgcn_num_bases: -1
+
+# ---------- 训练 ----------
+seed: 42
+batch_size: 64
+num_workers: 4
+epochs: 20
+optimizer: "adam"
+lr: 5.0e-5
+weight_decay: 1.0e-5
+# 前缀向量与 RGCN 可分别设不同学习率
+lr_prefix: 5.0e-5
+lr_rgcn: 1.0e-4
+# 正则化权重（公式7中的 λ1 λ2）
+lambda_prefix: 1.0e-5
+lambda_rgcn: 1.0e-5
+
+# ---------- 评估 ----------
+bias_step: 0.1                    # 开放世界 bias 扫描步长
+topk: 1                           # Top-K 准确率
+
+# ---------- 日志 ----------
+log_interval: 50                  # 每N个batch打印一次
+save_best_only: true

@@ -1,0 +1,10 @@
+torch>=1.13.0
+torchvision>=0.14.0
+ftfy
+regex
+tqdm
+numpy
+Pillow
+scipy
+PyYAML
+clip @ git+https://github.com/openai/CLIP.git

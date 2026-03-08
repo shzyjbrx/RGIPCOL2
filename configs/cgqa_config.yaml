@@ -1,0 +1,18 @@
+# ─────────────────────────────────────────────
+# C-GQA Dataset Config
+# ─────────────────────────────────────────────
+_base_: "base_config.yaml"
+
+dataset: "cgqa"
+data_dir: "/home/bingxing2/home/scx6d4e/run/xuanzhenzhen/Troika/code/data/cgqa"
+
+feasibility_threshold: 0.49941
+
+# num_attrs: 413  num_objs: 674
+# train_pairs: 5592  test_seen: 888  test_unseen: 923
+
+batch_size: 64
+epochs: 20
+lr: 5.0e-5
+# C-GQA 节点多，建议使用基函数分解防止过拟合
+rgcn_num_bases: 4

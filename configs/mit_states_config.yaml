@@ -1,0 +1,19 @@
+# ─────────────────────────────────────────────
+# MIT-States Dataset Config
+# 继承 base_config.yaml，覆盖数据集相关字段
+# ─────────────────────────────────────────────
+_base_: "base_config.yaml"
+
+dataset: "mit-states"
+data_dir: "/home/bingxing2/home/scx6d4e/run/xuanzhenzhen/Troika/code/data/mit-states"
+
+# MIT-States 最优可行性阈值（来自GIPCOL论文附录D）
+feasibility_threshold: 0.40691
+
+# MIT-States 数据集统计（供参考）
+# num_attrs: 115  num_objs: 245
+# train_pairs: 1262  test_seen: 400  test_unseen: 400
+
+batch_size: 64
+epochs: 20
+lr: 5.0e-5

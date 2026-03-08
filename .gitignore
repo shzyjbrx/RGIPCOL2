@@ -1,0 +1,12 @@
+# Python 缓存
+__pycache__/
+*.py[cod]
+
+# 训练日志和权重模型
+logs/
+saved_models/
+*.pt
+*.pth
+
+# 数据集和缓存图
+graph_data/
