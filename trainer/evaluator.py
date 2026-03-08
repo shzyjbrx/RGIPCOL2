@@ -144,7 +144,7 @@ class Evaluator:
         return metrics
 
     # ────────────────────────────
-    # 分数收集
+    # 分数收集 (提速版)
     # ────────────────────────────
 
     @torch.no_grad()
@@ -155,12 +155,6 @@ class Evaluator:
     ) -> Tuple[torch.Tensor, List[int], List[int]]:
         """
         对整个 dataloader 批次计算分数。
-
-        Returns
-        -------
-        all_scores : (N, P)  CPU Tensor
-        all_gt_attr: list of int（gt attr_idx）
-        all_gt_obj : list of int（gt obj_idx）
         """
         self.model.eval()
 
@@ -168,12 +162,27 @@ class Evaluator:
         all_gt_attr = []
         all_gt_obj  = []
 
+        # === 核心提速 1：在循环外一次性计算所有候选对的概念向量 ===
+        tgt_attr_idx = torch.tensor(
+            [self.dataset.attr2idx[a] for a, _ in target_pairs],
+            dtype=torch.long, device=self.device
+        )
+        tgt_obj_idx  = torch.tensor(
+            [self.dataset.obj2idx[o] for _, o in target_pairs],
+            dtype=torch.long, device=self.device
+        )
+        # 调用昨天加了分块保护的计算方法
+        concept_vecs = self.model.compute_concept_vectors(tgt_attr_idx, tgt_obj_idx)
+
         for batch in dataloader:
             images   = batch["image"].to(self.device)
             gt_attr  = batch["attr_idx"].tolist()
             gt_obj   = batch["obj_idx"].tolist()
 
-            scores, _ = self.model.predict(images, target_pairs)
+            # 仅提取图像特征并直接做矩阵乘法，避开重复过文本模型的开销
+            img_feats = self.model.clip.encode_image(images)
+            scores = img_feats @ concept_vecs.T
+
             all_scores.append(scores.cpu())
             all_gt_attr.extend(gt_attr)
             all_gt_obj.extend(gt_obj)
@@ -182,7 +191,7 @@ class Evaluator:
         return all_scores, all_gt_attr, all_gt_obj
 
     # ────────────────────────────
-    # 指标计算
+    # 指标计算 (GPU 加速极速版)
     # ────────────────────────────
 
     def _compute_metrics(
@@ -197,58 +206,52 @@ class Evaluator:
         """
         通过扫描 bias，计算 S / U / HM / AUC。
         """
-        # 构建 pair → gt 真值的映射（布尔正确矩阵）
-        # gt_correct[n] = True if pairs[pred_idx] == gt_pair
         attr2idx = self.dataset.attr2idx
         obj2idx  = self.dataset.obj2idx
 
-        # pair_attr_idx / pair_obj_idx：候选 pair 集合的 attr/obj 索引
         pair_attr = torch.tensor([attr2idx[a] for a, _ in pairs], dtype=torch.long)
         pair_obj  = torch.tensor([obj2idx[o]  for _, o in pairs], dtype=torch.long)
 
         gt_attr_t = torch.tensor(gt_attr, dtype=torch.long)  # (N,)
         gt_obj_t  = torch.tensor(gt_obj,  dtype=torch.long)  # (N,)
 
-        # gt_match_matrix[n, p] = 1 if pair p matches sample n's gt
-        # (N, P)
         gt_match = (
             (pair_attr.unsqueeze(0) == gt_attr_t.unsqueeze(1)) &
             (pair_obj.unsqueeze(0)  == gt_obj_t.unsqueeze(1))
         )  # (N, P) bool
 
-        seen_scores_list   = []   # seen acc 在各 bias 下
-        unseen_scores_list = []   # unseen acc 在各 bias 下
+        # 提前算好 seen / unseen 掩码，移出循环
+        gt_pair_in_seen   = self._is_gt_in_subset(
+            gt_attr_t, gt_obj_t, pairs, seen_idx, attr2idx, obj2idx
+        )
+        gt_pair_in_unseen = self._is_gt_in_subset(
+            gt_attr_t, gt_obj_t, pairs, unseen_idx, attr2idx, obj2idx
+        )
+
+        seen_total = gt_pair_in_seen.float().sum().clamp(min=1)
+        unseen_total = gt_pair_in_unseen.float().sum().clamp(min=1)
+
+        # === 核心提速 2：将大矩阵全面转移到 GPU，利用张量并行取代 CPU 慢速计算 ===
+        all_scores = all_scores.to(self.device)
+        gt_match = gt_match.to(self.device)
+        gt_pair_in_seen = gt_pair_in_seen.to(self.device)
+        gt_pair_in_unseen = gt_pair_in_unseen.to(self.device)
+        
+        # 预先构建 Bias 偏置掩码，彻底抛弃巨耗内存的 .clone() 复制操作
+        bias_mask = torch.zeros(len(pairs), device=self.device)
+        bias_mask[unseen_idx] = 1.0
+
+        seen_scores_list   = []   
+        unseen_scores_list = []   
 
         for bias in self.biases:
-            # unseen pair 的分数加 bias
-            biased_scores = all_scores.clone()
-            biased_scores[:, unseen_idx] += bias
+            # 高效写法：原矩阵不动，利用广播机制加上偏置项并极速求出预测下标
+            pred_idx = (all_scores + bias_mask * bias).argmax(dim=1)
 
-            pred_idx = biased_scores.argmax(dim=1)   # (N,)
+            correct = gt_match[torch.arange(len(gt_attr), device=self.device), pred_idx]
 
-            # 是否预测正确
-            correct = gt_match[torch.arange(len(gt_attr)), pred_idx]  # (N,)
-
-            # 筛选 seen / unseen gt 样本
-            gt_in_seen   = torch.tensor(
-                [any((attr2idx[a], obj2idx[o]) == (gt_attr[n], gt_obj[n])
-                     for a, o in [pairs[i] for i in seen_idx])
-                 for n in range(len(gt_attr))],
-                dtype=torch.bool,
-            )
-            # 更高效的实现：用 mask
-            # 判断 gt_pair 是否在 seen / unseen 中
-            gt_pair_in_seen   = self._is_gt_in_subset(
-                gt_attr_t, gt_obj_t, pairs, seen_idx, attr2idx, obj2idx
-            )
-            gt_pair_in_unseen = self._is_gt_in_subset(
-                gt_attr_t, gt_obj_t, pairs, unseen_idx, attr2idx, obj2idx
-            )
-
-            seen_acc   = (correct & gt_pair_in_seen).float().sum() / \
-                         gt_pair_in_seen.float().sum().clamp(min=1)
-            unseen_acc = (correct & gt_pair_in_unseen).float().sum() / \
-                         gt_pair_in_unseen.float().sum().clamp(min=1)
+            seen_acc   = (correct & gt_pair_in_seen).float().sum() / seen_total
+            unseen_acc = (correct & gt_pair_in_unseen).float().sum() / unseen_total
 
             seen_scores_list.append(seen_acc.item())
             unseen_scores_list.append(unseen_acc.item())
@@ -257,12 +260,9 @@ class Evaluator:
         unseen_arr = np.array(unseen_scores_list)
         hm_arr     = 2 * seen_arr * unseen_arr / (seen_arr + unseen_arr + 1e-8)
 
-        # AUC：seen-unseen 曲线下面积
-        # 对 bias 从 -inf 到 +inf，seen 单调减，unseen 单调增
-        # 近似梯形积分
         auc = np.trapz(unseen_arr, seen_arr)
         if auc < 0:
-            auc = -auc   # 保证正值
+            auc = -auc   
 
         best_hm_idx = hm_arr.argmax()
 
