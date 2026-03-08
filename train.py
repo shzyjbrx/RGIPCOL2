@@ -185,15 +185,18 @@ def main():
     print(f"  {format_metrics(closed)}")
 
     print("\n[Main] --- 开放世界 ---")
-    glove_path = cfg.get("glove_path", None)
-    if glove_path and os.path.exists(str(glove_path)):
+    feasibility_path = cfg.get("feasibility_path", None)
+    if feasibility_path and os.path.exists(str(feasibility_path)):
+        print(f"[Main] 加载可行性文件：{feasibility_path}")
+        from trainer.feasibility import FeasibilityCalibrator
         feas = FeasibilityCalibrator(
-            test_dataset.attrs, test_dataset.objs,
-            test_dataset.seen_pairs, glove_path,
+            feasibility_path = feasibility_path,
+            dataset          = test_dataset,
         )
     else:
-        print("[Main] GloVe 未配置，跳过可行性过滤")
+        print(f"[Main] 未找到 feasibility_path（{feasibility_path}），跳过可行性过滤")
         feas = None
+    
     opened = evaluator.evaluate_open_world(test_loader, feas)
     print(f"  {format_metrics(opened)}")
 

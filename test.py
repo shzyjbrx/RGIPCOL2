@@ -20,6 +20,8 @@ def main():
     # 1. 加载 YAML 配置
     with open(args.config, "r", encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
+    
+    cfg['num_workers'] = 0 
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"[*] 使用计算设备: {device}")

@@ -5,11 +5,11 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --time=12:00:00                 # Zappos 较小，12h 足够
-#SBATCH --output=logs/ut-zappos/train/%x-%j.out
-#SBATCH --error=logs/ut-zappos/train/%x-%j.err
+#SBATCH --output=logs/cgqa/train/%x-%j.out
+#SBATCH --error=logs/cgqa/train/%x-%j.err
 
 # ─────────────────────────────────────────────
-# RGIPCOL  |  训练脚本  |  UT-Zappos
+# RGIPCOL  |  训练脚本  |  cgqa
 # ─────────────────────────────────────────────
 
 module purge
@@ -21,17 +21,17 @@ source activate /home/bingxing2/home/scx6d4e/run/xuanzhenzhen/Troika/code/minico
 
 CLIP_PATH=/home/bingxing2/home/scx6d4e/run/xuanzhenzhen/Troika/code/checkpoints/ViT-L-14.pt
 DATA_ROOT=/home/bingxing2/home/scx6d4e/run/xuanzhenzhen/Troika/code/data
-DATASET=ut-zappos50k
+DATASET=cgqa
 
 LR=1e-4
 LR_PREFIX=5e-5
 LR_RGCN=1e-4
-BATCH_SIZE=32
-EPOCHS=20
-NUM_WORKERS=4
+BATCH_SIZE=8
+EPOCHS=10
+NUM_WORKERS=0
 SEED=2333
 
-# UT-Zappos 节点极少（16 attr + 12 obj），无需基函数分解
+
 RGCN_LAYERS=2
 RGCN_BASES=-1
 RGCN_DROPOUT=0.2
@@ -42,7 +42,6 @@ JOB_ID=${SLURM_JOB_ID:-manual}
 SAVE_PATH=./saved_models/${DATASET}/bs${BATCH_SIZE}_lr${LR}_${TIMESTAMP}_${JOB_ID}
 
 mkdir -p ${SAVE_PATH}
-mkdir -p logs/ut-zappos/train
 
 echo "========================================"
 echo "  RGIPCOL Training  |  ${DATASET}"
@@ -53,7 +52,7 @@ echo "  GPU: $(nvidia-smi --query-gpu=name --format=csv,noheader | head -1)"
 echo "========================================"
 
 python -u train.py \
-    --config              configs/ut_zappos_config.yaml   \
+    --config              configs/cgqa_config.yaml   \
     --clip_model_path     ${CLIP_PATH}                    \
     --dataset_path        ${DATA_ROOT}/${DATASET}         \
     --save_path           ${SAVE_PATH}                    \
