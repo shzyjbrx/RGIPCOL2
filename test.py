@@ -7,6 +7,7 @@ import torch
 from data.dataset import get_dataloader
 from models.rgipcol import RGIPCOL
 from trainer.evaluator import Evaluator
+from trainer.feasibility import FeasibilityCalibrator
 
 def main():
     parser = argparse.ArgumentParser(description="Test RGIPCOL2 Model")
@@ -56,12 +57,23 @@ def main():
     world_type = "Open-World" if args.open_world else "Closed-World"
     print(f"[*] 开始在 {args.split} 集上进行 {world_type} 评估...")
     
+    # === 实例化可行性过滤器 ===
+    calibrator = None
+    if args.open_world:
+        feas_path = cfg.get("feasibility_path")
+        
+        if feas_path and os.path.exists(feas_path):
+            calibrator = FeasibilityCalibrator(
+                feasibility_path=feas_path,
+                dataset=test_dataset  # 传入 dataset 用于对齐张量
+            )
+        else:
+            print(f"[!] 警告：未找到可行性文件 {feas_path}，将进行无过滤的开放世界测试！")
+
     with torch.no_grad():
         if args.open_world:
-            # 开放世界评估 (目前暂未传入 feasibility_calibrator，进行最严苛的全空间匹配)
-            metrics = evaluator.evaluate_open_world(test_loader, feasibility_calibrator=None)
+            metrics = evaluator.evaluate_open_world(test_loader, feasibility_calibrator=calibrator)
         else:
-            # 闭合世界评估
             metrics = evaluator.evaluate_closed_world(test_loader)
 
     # 7. 打印最终指标

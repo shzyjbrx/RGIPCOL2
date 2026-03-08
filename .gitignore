@@ -10,3 +10,4 @@ saved_models/
 
 # 数据集和缓存图
 graph_data/
+glove/

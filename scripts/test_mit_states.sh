@@ -5,8 +5,8 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --time=1:00:00
-#SBATCH --output=logs/ut-zappos/test/%j.out
-#SBATCH --error=logs/ut-zappos/test/%j.err
+#SBATCH --output=logs/mit-states/test/%j.out
+#SBATCH --error=logs/mit-states/test/%j.err
 
 # 1. 加载必要的系统模块 (ARM 架构环境)
 # 这里的模块加载保持你之前编译 PyTorch 时的环境，防止运行时库缺失
@@ -21,12 +21,12 @@ source activate /home/bingxing2/home/scx6d4e/run/xuanzhenzhen/Troika/code/minico
 
 # ================= 配置区域 =================
 # 1. 配置文件路径 (包含了数据集路径、CLIP路径、超参数等)
-CONFIG="configs/ut_zappos_config.yaml"
+CONFIG="configs/mit_states_config.yaml"
 
 # 2. 【关键】模型权重路径
 # 请将下面的路径修改为您想要测试的那个实验生成的 best_model.pt
 # (参考您之前的训练日志，例如 ./saved_models/ut-zappos/bs32_lr1e-4_20260308_1152345/best_model.pt)
-CHECKPOINT="/home/bingxing2/home/scx6d4e/run/xuanzhenzhen/RGIPCOL2/saved_models/ut-zappos/bs128_lr1e-4_20260308_1152365/best_model.pt"
+CHECKPOINT="/home/bingxing2/home/scx6d4e/run/xuanzhenzhen/RGIPCOL2/saved_models/mit-states/bs128_lr1e-4_20260308_1152535/best_model.pt"
 
 # 3. 测试集划分 (通常选 test，如果想查验验证集可以改 val)
 SPLIT="test"

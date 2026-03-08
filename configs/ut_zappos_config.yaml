@@ -9,6 +9,7 @@ data_dir: "/home/bingxing2/home/scx6d4e/run/xuanzhenzhen/Troika/code/data/ut-zap
 clip_model: "ViT-L/14"
 clip_model_path: "/home/bingxing2/home/scx6d4e/run/xuanzhenzhen/Troika/code/checkpoints/ViT-L-14.pt"
 
+feasibility_path: "/home/bingxing2/home/scx6d4e/run/xuanzhenzhen/Troika/code/data/feasibility_ut-zappos.pt"
 feasibility_threshold: 0.51878
 
 # num_attrs: 16  num_objs: 12

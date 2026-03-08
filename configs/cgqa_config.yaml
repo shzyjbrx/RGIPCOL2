@@ -6,6 +6,9 @@ _base_: "base_config.yaml"
 dataset: "cgqa"
 data_dir: "/home/bingxing2/home/scx6d4e/run/xuanzhenzhen/Troika/code/data/cgqa"
 
+clip_model: "ViT-L/14"
+clip_model_path: "/home/bingxing2/home/scx6d4e/run/xuanzhenzhen/Troika/code/checkpoints/ViT-L-14.pt"
+
 feasibility_threshold: 0.49941
 
 # num_attrs: 413  num_objs: 674

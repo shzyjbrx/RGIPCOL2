@@ -29,7 +29,7 @@ rgcn_num_bases: -1
 # ---------- 训练 ----------
 seed: 42
 batch_size: 64
-num_workers: 4
+num_workers: 0
 epochs: 20
 optimizer: "adam"
 lr: 5.0e-5
