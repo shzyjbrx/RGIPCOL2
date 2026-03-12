@@ -80,6 +80,7 @@ class RGIPCOL(nn.Module):
             num_layers        = cfg.get("rgcn_num_layers", 2),
             num_bases         = cfg.get("rgcn_num_bases", -1),
             dropout           = cfg.get("rgcn_dropout", 0.3),
+            llm_features_path     = cfg.get("llm_features_path", None), 
         ).to(device)
 
         # ── 4. 软提示学习器（可学习） ──

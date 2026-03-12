@@ -7,13 +7,16 @@ llm_feature_loader.py
 
 对外提供：
   - load_node_descriptions(path, node_list, node_type)
-      → dict {name: str}   缺失项用 name 本身填充
+      → dict {name: str}  缺失项用 name 本身填充
   - load_edge_weights(path, train_pairs)
       → dict {(attr, obj): float}  缺失项用 0.5 填充
+  - load_node_features(path, node_list, clip_text_encoder)
+      → torch.Tensor  从 .pt 加载特征，缺失项用 CLIP 实时补齐
 """
 
 import json
 import os
+import torch  # [修复] 补充缺失的 torch 导入
 from typing import Dict, List, Optional, Tuple
 
 
@@ -24,26 +27,6 @@ def load_node_descriptions(
 ) -> Dict[str, str]:
     """
     从 JSON 文件加载节点的 LLM 涌现描述。
-
-    JSON 格式（mit_qwen.json）：
-        {
-            "sliced apple": "A sliced apple shows ...",
-            "old city":     "An old city features ...",
-            ...
-        }
-
-    对于 attr/obj 节点（node_type="primitive"），key 就是节点名；
-    对于 comp 节点（node_type="composition"），key 是 "attr obj" 格式。
-
-    Parameters
-    ----------
-    descriptions_path : JSON 文件路径
-    node_list         : 需要查找的节点名称列表
-    node_type         : 节点类型标识（用于构建 key）
-
-    Returns
-    -------
-    dict: {node_name: description_str}  缺失项用节点名本身代替（回退策略）
     """
     raw = {}
     if descriptions_path and os.path.exists(descriptions_path):
@@ -56,14 +39,12 @@ def load_node_descriptions(
     result = {}
     missing_cnt = 0
     for name in node_list:
-        # 尝试直接匹配（key 格式：name 或 "attr obj"）
         clean_name = name.replace("_", " ").replace(".", " ").strip()
         if clean_name in raw:
             result[name] = raw[clean_name]
         elif name in raw:
             result[name] = raw[name]
         else:
-            # 回退：使用节点名本身作为描述（CLIP 编码名称时的默认行为）
             result[name] = clean_name
             missing_cnt += 1
 
@@ -80,24 +61,6 @@ def load_edge_weights(
 ) -> Dict[Tuple[str, str], float]:
     """
     从 JSON 文件加载 (attr, obj) 边的 LLM 适用性权重。
-
-    JSON 格式（generate_edge_weights.py 输出）：
-        {
-            "sliced apple": 0.95,
-            "broken glass": 0.98,
-            "broken air":   0.05,
-            ...
-        }
-
-    Parameters
-    ----------
-    edge_weights_path : JSON 文件路径（可为 None）
-    train_pairs       : 训练组合对列表
-    default_weight    : 文件缺失或 key 缺失时的默认权重
-
-    Returns
-    -------
-    dict: {(attr, obj): float}
     """
     raw = {}
     if edge_weights_path and os.path.exists(edge_weights_path):
@@ -124,3 +87,55 @@ def load_edge_weights(
         print(f"[LLMLoader] {missing_cnt}/{len(train_pairs)} 个 pair 无边权重，使用默认 {default_weight}")
 
     return result
+
+
+def load_node_features(
+    features_path: str,
+    node_list: List[str],
+    clip_text_encoder, 
+    feature_dim: int = 768
+) -> torch.Tensor:
+    """从 .pt 文件加载预计算的 LLM 节点特征"""
+    
+    if features_path and os.path.exists(features_path):
+        features_dict = torch.load(features_path, map_location="cpu")
+        print(f"[LLMLoader] 成功加载离线特征文件：{features_path}")
+    else:
+        print(f"[LLMLoader] 警告：未找到特征文件 {features_path}，将触发 CLIP 补齐。")
+        features_dict = {}
+
+    out_feats = []
+    missing_nodes = []
+    
+    for name in node_list:
+        clean_name = name.replace("_", " ").replace(".", " ").strip()
+        
+        # 匹配字典中的特征
+        if clean_name in features_dict:
+            out_feats.append(features_dict[clean_name])
+        elif name in features_dict:
+            out_feats.append(features_dict[name])
+        else:
+            missing_nodes.append(name)
+            
+    # 如果有缺失的节点，调用原生的 CLIP text encoder 即时补齐作为 fallback
+    if len(missing_nodes) > 0:
+        print(f"[LLMLoader] {len(missing_nodes)} 个节点在 .pt 中缺失，使用原始 CLIP 名称特征补齐...")
+        with torch.no_grad():
+            fallback_feats = clip_text_encoder(missing_nodes).cpu()
+            
+        # 填补进去
+        miss_idx = 0
+        final_feats = []
+        for name in node_list:
+            clean_name = name.replace("_", " ").replace(".", " ").strip()
+            if clean_name in features_dict:
+                final_feats.append(features_dict[clean_name])
+            elif name in features_dict:
+                final_feats.append(features_dict[name])
+            else:
+                final_feats.append(fallback_feats[miss_idx])
+                miss_idx += 1
+        out_feats = final_feats
+
+    return torch.stack(out_feats, dim=0).float()

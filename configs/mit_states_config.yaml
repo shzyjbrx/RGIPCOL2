@@ -22,5 +22,5 @@ batch_size: 64
 epochs: 20
 lr: 5.0e-5
 
-llm_descriptions_path: "./LLM/mit_node_descriptions.json"
+llm_features_path: "./LLM/mit_node_features.pt"
 llm_edge_weights_path: "./LLM/mit_edge_weights.json"
