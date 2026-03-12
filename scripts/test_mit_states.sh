@@ -19,6 +19,12 @@ source ~/.bashrc
 # 刚才辛苦配置好的环境名
 source activate /home/bingxing2/home/scx6d4e/run/xuanzhenzhen/Troika/code/miniconda3/envs/recAtk/xuan-czsl-py38
 
+export HF_ENDPOINT=https://hf-mirror.com
+
+echo $HF_ENDPOINT
+
+export http_proxy=http://172.16.54.201:8888
+
 # ================= 配置区域 =================
 # 1. 配置文件路径 (包含了数据集路径、CLIP路径、超参数等)
 CONFIG="configs/mit_states_config.yaml"

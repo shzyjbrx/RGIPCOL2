@@ -1,6 +1,5 @@
 # ─────────────────────────────────────────────
 # MIT-States Dataset Config
-# 继承 base_config.yaml，覆盖数据集相关字段
 # ─────────────────────────────────────────────
 _base_: "base_config.yaml"
 
@@ -10,10 +9,6 @@ clip_model_path: "/home/bingxing2/home/scx6d4e/run/xuanzhenzhen/Troika/code/chec
 dataset: "mit-states"
 data_dir: "/home/bingxing2/home/scx6d4e/run/xuanzhenzhen/Troika/code/data/mit-states"
 
-# MIT-States 最优可行性阈值（来自GIPCOL论文附录D）
-feasibility_path: "/home/bingxing2/home/scx6d4e/run/xuanzhenzhen/Troika/code/data/feasibility_mit-states.pt"
-feasibility_threshold: 0.40691
-
 # MIT-States 数据集统计（供参考）
 # num_attrs: 115  num_objs: 245
 # train_pairs: 1262  test_seen: 400  test_unseen: 400
@@ -22,5 +17,25 @@ batch_size: 64
 epochs: 20
 lr: 5.0e-5
 
+# ---------- LLM 节点特征 ----------
 llm_features_path: "./LLM/mit_node_features.pt"
-llm_edge_weights_path: "./LLM/mit_edge_weights.json"
+
+# ─────────────────────────────────────────────
+# 开放世界可行性过滤（双阶段）
+# ─────────────────────────────────────────────
+
+# 启用双阶段过滤
+use_two_stage_filter: true
+
+# Stage-1 来源：官方预计算 .pt 文件
+# θ₁ 偏松（< feasibility_threshold=0.40691），让足够多的候选进入 Stage-2
+feasibility_path: "/home/bingxing2/home/scx6d4e/run/xuanzhenzhen/Troika/code/data/feasibility_mit-states.pt"
+feasibility_theta1: 0.3
+
+# Stage-2：LLM 物理合理性精筛
+# 优先读缓存；缺失的 pair 在线生成后写回
+llm_edge_weights_path: "./LLM/mit-states_edge_weights.json"
+feasibility_theta2: 0.5
+
+# 方案 B 回退阈值（use_two_stage_filter=false 时生效）
+feasibility_threshold: 0.40691

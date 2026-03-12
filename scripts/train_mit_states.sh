@@ -21,6 +21,12 @@ module load compilers/cuda/11.6
 source ~/.bashrc
 source activate /home/bingxing2/home/scx6d4e/run/xuanzhenzhen/Troika/code/miniconda3/envs/recAtk/xuan-czsl-py38
 
+export HF_ENDPOINT=https://hf-mirror.com
+
+echo $HF_ENDPOINT
+
+export http_proxy=http://172.16.54.201:8888
+
 # 3. 路径与超参数定义
 CLIP_PATH=/home/bingxing2/home/scx6d4e/run/xuanzhenzhen/Troika/code/checkpoints/ViT-L-14.pt
 DATA_ROOT=/home/bingxing2/home/scx6d4e/run/xuanzhenzhen/Troika/code/data
