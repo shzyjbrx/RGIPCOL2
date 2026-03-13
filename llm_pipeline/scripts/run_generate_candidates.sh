@@ -28,10 +28,9 @@ export http_proxy=http://172.16.54.201:8888
 # 3. 核心参数配置
 DATASET="mit-states"
 DATA_ROOT="/home/bingxing2/home/scx6d4e/run/xuanzhenzhen/Troika/code/data/${DATASET}"
-MODEL_ID="Qwen/Qwen2.5-7B-Instruct"
+MODEL_ID="google/gemma-2-9b-it"
 K_CANDIDATES=5
-CANDIDATE_PATH="./LLM/${DATASET}_candidate_descriptions_Qwen2.json"
-
+CANDIDATE_PATH="./LLM/${DATASET}_candidate_descriptions_gemma.json"
 
 echo "============================================================"
 echo "  🚀 [Step 1] 启动本地大模型生成候选描述"

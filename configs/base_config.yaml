@@ -35,7 +35,7 @@ weight_decay: 1.0e-5
 lr_prefix: 5.0e-5
 lr_rgcn: 1.0e-4
 lambda_prefix: 1.0e-5
-lambda_rgcn: 1.0e-5
+lambda_rgcn: 1.0e-4
 
 # ---------- 评估 ----------
 bias_step: 0.001

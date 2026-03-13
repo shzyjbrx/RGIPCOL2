@@ -9,12 +9,28 @@ data_dir: "/home/bingxing2/home/scx6d4e/run/xuanzhenzhen/Troika/code/data/ut-zap
 clip_model: "ViT-L/14"
 clip_model_path: "/home/bingxing2/home/scx6d4e/run/xuanzhenzhen/Troika/code/checkpoints/ViT-L-14.pt"
 
-feasibility_path: "/home/bingxing2/home/scx6d4e/run/xuanzhenzhen/Troika/code/data/feasibility_ut-zappos.pt"
-feasibility_threshold: 0.51878
-
 # num_attrs: 16  num_objs: 12
 # train_pairs: 83  test_seen: 18  test_unseen: 18
 
 batch_size: 64
 epochs: 20
 lr: 5.0e-5
+
+# ---------- LLM 节点特征 ----------
+llm_features_path: "./LLM/ut-zappos_node_features.pt"
+
+# ─────────────────────────────────────────────
+# 开放世界可行性过滤
+# ─────────────────────────────────────────────
+# UT-Zappos 词汇量极小（16 × 12 = 192），开放世界候选空间有限
+# 使用单阶段官方预计算即可；如需双阶段可将 use_two_stage_filter 改为 true
+
+use_two_stage_filter: false
+
+feasibility_path: "/home/bingxing2/home/scx6d4e/run/xuanzhenzhen/Troika/code/data/feasibility_ut-zappos.pt"
+feasibility_threshold: 0.51878
+
+# 双阶段参数（备用）
+feasibility_theta1: 0.5
+llm_edge_weights_path: "./LLM/ut-zappos_edge_weights.json"
+feasibility_theta2: 0.5

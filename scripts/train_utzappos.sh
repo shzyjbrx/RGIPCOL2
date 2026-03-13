@@ -26,10 +26,10 @@ DATASET=ut-zappos
 LR=1e-4
 LR_PREFIX=5e-5
 LR_RGCN=1e-4
-BATCH_SIZE=128
-EPOCHS=10
+BATCH_SIZE=256
+EPOCHS=15
 NUM_WORKERS=4
-SEED=215
+SEED=7777
 
 # UT-Zappos 节点极少（16 attr + 12 obj），无需基函数分解
 RGCN_LAYERS=4
@@ -52,6 +52,7 @@ echo "  LR=${LR}  BS=${BATCH_SIZE}  Epochs=${EPOCHS}"
 echo "  GPU: $(nvidia-smi --query-gpu=name --format=csv,noheader | head -1)"
 echo "========================================"
 
+# 6. 运行训练（-u 实时输出日志）sbatch scripts/train_utzappos.sh
 python -u train.py \
     --config              configs/ut_zappos_config.yaml   \
     --clip_model_path     ${CLIP_PATH}                    \

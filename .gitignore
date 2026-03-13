@@ -12,6 +12,4 @@ saved_models/
 graph_data/
 glove/
 LLM/
-
-llm_pipeline/generate_edge_weights.py
-llm_pipeline/generate_node_descriptions.py
+visualize/outputs/

@@ -35,14 +35,14 @@ DATASET=mit-states
 LR=1e-4
 LR_PREFIX=5e-5
 LR_RGCN=1e-4
-BATCH_SIZE=64
-EPOCHS=10
+BATCH_SIZE=256
+EPOCHS=15
 NUM_WORKERS=4
-SEED=0
+SEED=7777
 
 RGCN_LAYERS=3
-RGCN_BASES=-1          # MIT-States 节点少，不需要基函数分解
-RGCN_DROPOUT=0.3
+RGCN_BASES=4          # MIT-States 节点少，不需要基函数分解
+RGCN_DROPOUT=0.4
 PREFIX_LEN=3
 
 TIMESTAMP=$(date +%Y%m%d)
@@ -67,7 +67,7 @@ echo "  RGCN: layers=${RGCN_LAYERS}  bases=${RGCN_BASES}  dropout=${RGCN_DROPOUT
 echo "  GPU: $(nvidia-smi --query-gpu=name --format=csv,noheader | head -1)"
 echo "========================================"
 
-# 6. 运行训练（-u 实时输出日志）
+# 6. 运行训练（-u 实时输出日志）sbatch scripts/train_mit_states.sh
 python -u train.py \
     --config              configs/mit_states_config.yaml  \
     --clip_model_path     ${CLIP_PATH}                    \

@@ -30,7 +30,7 @@ use_two_stage_filter: true
 # Stage-1 来源：官方预计算 .pt 文件
 # θ₁ 偏松（< feasibility_threshold=0.40691），让足够多的候选进入 Stage-2
 feasibility_path: "/home/bingxing2/home/scx6d4e/run/xuanzhenzhen/Troika/code/data/feasibility_mit-states.pt"
-feasibility_theta1: 0.3
+feasibility_theta1: 0.4
 
 # Stage-2：LLM 物理合理性精筛
 # 优先读缓存；缺失的 pair 在线生成后写回
